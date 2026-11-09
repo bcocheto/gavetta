@@ -16,8 +16,12 @@ install: schemas
 run: install
 	dbus-run-session -- gnome-shell --devkit --wayland
 
-pack: schemas
-	gnome-extensions pack $(SRC) --force --extra-source=store.js --extra-source=popup.js --extra-source=data.js --out-dir=dist
+# gnome-extensions pack costuma dar segfault; empacota com zip (sem o schema compilado)
+pack:
+	mkdir -p dist
+	rm -f dist/$(UUID).shell-extension.zip
+	cd $(SRC) && zip -qr ../dist/$(UUID).shell-extension.zip . -x 'schemas/gschemas.compiled'
+	@unzip -l dist/$(UUID).shell-extension.zip
 
 lint:
 	@for f in $(SRC)/*.js; do node --check --input-type=module < $$f && echo "ok $$f"; done
