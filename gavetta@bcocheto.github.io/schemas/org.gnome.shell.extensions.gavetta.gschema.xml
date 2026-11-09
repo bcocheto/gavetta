@@ -2,17 +2,35 @@
 <schemalist>
   <schema id="org.gnome.shell.extensions.gavetta" path="/org/gnome/shell/extensions/gavetta/">
     <key name="toggle-shortcut" type="as">
-      <default><![CDATA[['<Super><Shift>v']]]></default>
+      <default><![CDATA[['<Super>v']]]></default>
       <summary>Atalho para abrir a Gavetta</summary>
-      <description>Super+V já é usado pelo GNOME para a bandeja de notificações.</description>
+      <description>Com "takeover-super-v" ligado, a Gavetta libera o Super+V da bandeja de notificações do GNOME enquanto estiver ativa.</description>
+    </key>
+    <key name="takeover-super-v" type="b">
+      <default>true</default>
+      <summary>Assumir o Super+V</summary>
+      <description>Remove Super+V do atalho "toggle-message-tray" do GNOME enquanto a extensão estiver ativa e restaura ao desativar (Super+M continua abrindo a bandeja).</description>
+    </key>
+    <key name="saved-tray-shortcuts" type="as">
+      <default>[]</default>
+      <summary>Backup interno do atalho original da bandeja</summary>
     </key>
     <key name="history-size" type="i">
       <default>100</default>
+      <range min="10" max="1000"/>
       <summary>Máximo de itens no histórico (fixados não contam)</summary>
     </key>
     <key name="paste-on-select" type="b">
       <default>true</default>
       <summary>Colar direto no app ao escolher um item</summary>
+    </key>
+    <key name="show-indicator" type="b">
+      <default>true</default>
+      <summary>Mostrar ícone no painel</summary>
+    </key>
+    <key name="popup-position" type="s">
+      <default>'pointer'</default>
+      <summary>Onde o popup abre: pointer, window ou center</summary>
     </key>
   </schema>
 </schemalist>

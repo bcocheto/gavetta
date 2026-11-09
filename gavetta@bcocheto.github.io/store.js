@@ -2,6 +2,7 @@ import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 
 const LINK_RE = /^https?:\/\/\S+$/i;
+const MAX_RECENT_EMOJI = 24;
 
 // Histórico persistido em ~/.local/share/gavetta/history.json
 // Imagens ficam em ~/.local/share/gavetta/images/<sha256>.png
@@ -13,6 +14,7 @@ export class Store {
         this._file = Gio.File.new_for_path(GLib.build_filenamev([this._dir, 'history.json']));
         GLib.mkdir_with_parents(this._imgDir, 0o700);
         this.items = [];
+        this.recents = [];
         this._load();
     }
 
@@ -38,6 +40,25 @@ export class Store {
         if (!GLib.file_test(path, GLib.FileTest.EXISTS))
             GLib.file_set_contents(path, bytes.get_data());
         return this._add({type: 'image', hash});
+    }
+
+    // Arquivos copiados no gerenciador de arquivos (imagens, vídeos, PDFs…)
+    addFiles(uris) {
+        const joined = uris.join('\n');
+        const hash = GLib.compute_checksum_for_string(GLib.ChecksumType.SHA256, joined, -1);
+        const names = uris.map(u => decodeURIComponent(u.split('/').pop())).join(', ');
+        return this._add({type: 'file', uris, text: names, hash});
+    }
+
+    addRecentEmoji(glyph) {
+        this.recents = [glyph, ...this.recents.filter(e => e !== glyph)].slice(0, MAX_RECENT_EMOJI);
+        this._save();
+    }
+
+    touch(item) {
+        item.ts = Date.now();
+        this._sort();
+        this._save();
     }
 
     togglePin(item) {
@@ -96,17 +117,26 @@ export class Store {
     _load() {
         try {
             const [ok, data] = this._file.load_contents(null);
-            if (ok)
-                this.items = JSON.parse(new TextDecoder().decode(data));
+            if (!ok)
+                return;
+            const parsed = JSON.parse(new TextDecoder().decode(data));
+            if (Array.isArray(parsed)) {
+                this.items = parsed;
+            } else {
+                this.items = parsed.items ?? [];
+                this.recents = parsed.recents ?? [];
+            }
         } catch (_e) {
             this.items = [];
+            this.recents = [];
         }
     }
 
     _save() {
         try {
+            const payload = JSON.stringify({items: this.items, recents: this.recents});
             this._file.replace_contents(
-                new TextEncoder().encode(JSON.stringify(this.items)),
+                new TextEncoder().encode(payload),
                 null, false, Gio.FileCreateFlags.REPLACE_DESTINATION, null);
         } catch (e) {
             console.error(`[Gavetta] falha ao salvar: ${e.message}`);
