@@ -169,7 +169,11 @@ export class GavettaPopup {
         }
         const spacer = new St.Widget({x_expand: true});
         this._chipRow.add_child(spacer);
-        const clear = new St.Button({label: 'Limpar', style_class: 'gavetta-chip danger', can_focus: true});
+        const clear = new St.Button({
+            child: new St.Icon({icon_name: 'user-trash-symbolic', icon_size: 14}),
+            style_class: 'gavetta-chip danger',
+            can_focus: true,
+        });
         clear.connect('clicked', () => {
             this._store.clear();
             this._render();
