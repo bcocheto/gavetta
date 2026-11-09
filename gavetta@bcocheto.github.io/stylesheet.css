@@ -1,0 +1,94 @@
+/* Gavetta — cards sobre o popup escuro do GNOME */
+
+.gavetta-menu .popup-menu-content { padding: 10px; }
+
+.gavetta-header { spacing: 8px; padding-bottom: 8px; }
+
+.gavetta-search {
+    min-width: 24em;
+    padding: 7px 14px;
+    border-radius: 999px;
+    background-color: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: #f2f2f2;
+    caret-color: #62a0ea;
+}
+.gavetta-search:focus {
+    border-color: #62a0ea;
+    background-color: rgba(255, 255, 255, 0.10);
+}
+.gavetta-search StLabel.hint-text { color: rgba(255, 255, 255, 0.45); }
+
+.gavetta-chips { spacing: 6px; }
+.gavetta-chip {
+    padding: 3px 12px;
+    border-radius: 999px;
+    font-size: 0.85em;
+    font-weight: bold;
+    color: rgba(255, 255, 255, 0.70);
+    background-color: rgba(255, 255, 255, 0.06);
+}
+.gavetta-chip:hover { background-color: rgba(255, 255, 255, 0.14); }
+.gavetta-chip.active { color: #ffffff; background-color: #3584e4; }
+
+.gavetta-list { spacing: 6px; padding: 2px 0; }
+
+.gavetta-card {
+    border-radius: 12px;
+    padding: 9px 10px;
+    spacing: 10px;
+    background-color: rgba(255, 255, 255, 0.055);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+.gavetta-card:hover,
+.gavetta-card:focus {
+    background-color: rgba(255, 255, 255, 0.13);
+    border-color: rgba(98, 160, 234, 0.55);
+}
+.gavetta-card.pinned { border-left: 3px solid #f5c211; }
+
+.gavetta-badge {
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    background-color: rgba(255, 255, 255, 0.08);
+}
+.gavetta-badge.text { background-color: rgba(98, 160, 234, 0.25); }
+.gavetta-badge.link { background-color: rgba(87, 227, 137, 0.22); }
+.gavetta-badge StIcon { icon-size: 16px; color: #ffffff; }
+
+.gavetta-thumb {
+    width: 96px;
+    height: 64px;
+    border-radius: 9px;
+    background-size: cover;
+    background-color: rgba(255, 255, 255, 0.06);
+}
+
+.gavetta-preview { color: #f2f2f2; }
+.gavetta-meta { font-size: 0.78em; color: rgba(255, 255, 255, 0.50); }
+
+.gavetta-action {
+    padding: 5px;
+    border-radius: 999px;
+    background-color: transparent;
+    color: rgba(255, 255, 255, 0.75);
+}
+.gavetta-action:hover { background-color: rgba(255, 255, 255, 0.18); color: #ffffff; }
+.gavetta-action.pin-on { color: #f5c211; }
+.gavetta-action.danger:hover { background-color: rgba(224, 27, 36, 0.55); }
+
+.gavetta-empty { padding: 28px 10px; spacing: 8px; }
+.gavetta-empty StIcon { icon-size: 40px; color: rgba(255, 255, 255, 0.30); }
+.gavetta-empty StLabel { color: rgba(255, 255, 255, 0.55); }
+
+.gavetta-footer { padding-top: 8px; spacing: 8px; }
+.gavetta-count { font-size: 0.82em; color: rgba(255, 255, 255, 0.50); }
+.gavetta-clear {
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 0.85em;
+    color: rgba(255, 255, 255, 0.75);
+    background-color: rgba(255, 255, 255, 0.06);
+}
+.gavetta-clear:hover { background-color: rgba(224, 27, 36, 0.55); color: #ffffff; }
