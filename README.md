@@ -14,6 +14,19 @@ Histórico da área de transferência com texto, links, imagens, arquivos e víd
 
 ---
 
+## 📸 Capturas
+
+<table>
+  <tr>
+    <td align="center"><img src="docs/screenshots/01-area-de-transferencia.png" width="320" alt="Histórico da área de transferência"><br><sub>Histórico com prévias e itens fixados</sub></td>
+    <td align="center"><img src="docs/screenshots/02-navegacao-teclado.png" width="320" alt="Navegação pelo teclado"><br><sub>Navegação por teclado, com fixar e apagar</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/screenshots/03-emoji.png" width="320" alt="Aba de emoji"><br><sub>Emoji com recentes e categorias</sub></td>
+    <td align="center"><img src="docs/screenshots/05-filtro-imagens.png" width="320" alt="Filtro por imagens"><br><sub>Filtros por tipo (aqui, só imagens)</sub></td>
+  </tr>
+</table>
+
 ## ✨ Funcionalidades
 
 | | Recurso | Detalhe |
@@ -148,7 +161,7 @@ journalctl -f -o cat /usr/bin/gnome-shell
 
 ## 🗺️ Roadmap
 
-- [ ] Capturas de tela e GIF de demonstração
+- [ ] GIF de demonstração
 - [ ] Publicar no extensions.gnome.org
 - [ ] Ignorar apps específicos (lista configurável)
 - [ ] Colar como texto simples
