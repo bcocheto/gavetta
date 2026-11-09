@@ -192,13 +192,6 @@ export class GavettaPopup {
         this._status = new St.Label({style_class: 'gavetta-hint', x_expand: true});
         this._box.add_child(this._status);
 
-        this._backdrop.connect('button-press-event', (_a, event) => {
-            if (event.get_source() === this._backdrop) {
-                this.close();
-                return Clutter.EVENT_STOP;
-            }
-            return Clutter.EVENT_PROPAGATE;
-        });
         this._backdrop.connect('captured-event', (_a, event) => this._onEvent(event));
     }
 
@@ -415,7 +408,7 @@ export class GavettaPopup {
             x_align: Clutter.ActorAlign.FILL,
         });
         card._item = item;
-        const row = new St.BoxLayout({x_expand: true});
+        const row = new St.BoxLayout({x_expand: true, style_class: 'gavetta-card-row'});
         card.set_child(row);
 
         // Lado esquerdo: miniatura ou emblema
@@ -458,7 +451,7 @@ export class GavettaPopup {
         row.add_child(mid);
 
         // Ações no hover
-        const actions = new St.BoxLayout({y_align: Clutter.ActorAlign.CENTER});
+        const actions = new St.BoxLayout({y_align: Clutter.ActorAlign.CENTER, style_class: 'gavetta-actions'});
         const pin = this._iconButton(
             item.pinned ? 'starred-symbolic' : 'non-starred-symbolic',
             item.pinned ? 'pin-on' : '',
@@ -578,8 +571,24 @@ export class GavettaPopup {
         this._onPick(payload);
     }
 
+    // Clique (ou toque) fora do popup fecha
+    _isOutside(event) {
+        const [x, y] = event.get_coords();
+        const [bx, by] = this._box.get_transformed_position();
+        const [bw, bh] = this._box.get_transformed_size();
+        return x < bx || x > bx + bw || y < by || y > by + bh;
+    }
+
     _onEvent(event) {
-        if (event.type() !== Clutter.EventType.KEY_PRESS)
+        const type = event.type();
+        if (type === Clutter.EventType.BUTTON_PRESS || type === Clutter.EventType.TOUCH_BEGIN) {
+            if (this._isOutside(event)) {
+                this.close();
+                return Clutter.EVENT_STOP;
+            }
+            return Clutter.EVENT_PROPAGATE;
+        }
+        if (type !== Clutter.EventType.KEY_PRESS)
             return Clutter.EVENT_PROPAGATE;
 
         const sym = event.get_key_symbol();

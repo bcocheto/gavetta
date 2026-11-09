@@ -2,9 +2,10 @@
 
 .gavetta-popup {
     width: 420px;
-    height: 540px;
-    padding: 12px;
-    spacing: 8px;
+    min-height: 320px;
+    max-height: 560px;
+    padding: 14px;
+    spacing: 10px;
     border-radius: 18px;
     background-color: rgba(34, 34, 38, 0.97);
     border: 1px solid rgba(255, 255, 255, 0.10);
@@ -13,9 +14,9 @@
 }
 
 /* ── abas ── */
-.gavetta-tabs { spacing: 4px; padding: 3px; border-radius: 12px; background-color: rgba(255, 255, 255, 0.06); }
+.gavetta-tabs { spacing: 4px; padding: 4px; border-radius: 12px; background-color: rgba(255, 255, 255, 0.06); }
 .gavetta-tab {
-    padding: 5px 0;
+    padding: 6px 0;
     border-radius: 9px;
     font-size: 1.15em;
     color: rgba(255, 255, 255, 0.65);
@@ -32,12 +33,17 @@
     border: 1px solid rgba(255, 255, 255, 0.08);
     color: #f2f2f2;
     caret-color: #62a0ea;
+    box-shadow: none;
 }
-.gavetta-search:focus { border-color: #62a0ea; background-color: rgba(255, 255, 255, 0.10); }
+.gavetta-search:focus {
+    border-color: #62a0ea;
+    background-color: rgba(255, 255, 255, 0.10);
+    box-shadow: none;
+}
 .gavetta-search StLabel.hint-text { color: rgba(255, 255, 255, 0.45); }
 
 /* ── chips ── */
-.gavetta-chips { spacing: 5px; }
+.gavetta-chips { spacing: 6px; padding: 0 2px; }
 .gavetta-chip {
     padding: 2px 10px;
     border-radius: 999px;
@@ -51,7 +57,9 @@
 .gavetta-chip.danger:hover { background-color: rgba(224, 27, 36, 0.60); color: #ffffff; }
 
 /* ── conteúdo ── */
-.gavetta-content { spacing: 6px; padding: 2px 4px 2px 0; }
+.gavetta-content { spacing: 8px; padding: 2px 6px 4px 2px; }
+.gavetta-card-row { spacing: 12px; }
+.gavetta-actions { spacing: 2px; }
 .gavetta-section {
     padding: 8px 4px 2px 4px;
     font-size: 0.8em;
@@ -62,8 +70,7 @@
 /* ── cards (área de transferência / kaomoji) ── */
 .gavetta-card {
     border-radius: 12px;
-    padding: 9px 10px;
-    spacing: 10px;
+    padding: 10px 12px;
     background-color: rgba(255, 255, 255, 0.055);
     border: 1px solid rgba(255, 255, 255, 0.05);
     text-align: left;
@@ -73,7 +80,7 @@
     border-color: rgba(98, 160, 234, 0.60);
 }
 .gavetta-card.pinned { border-left: 3px solid #f5c211; }
-.gavetta-card.kaomoji { padding: 7px 12px; text-align: center; }
+.gavetta-card.kaomoji { padding: 8px 12px; text-align: center; }
 
 .gavetta-badge {
     width: 32px;
@@ -123,4 +130,4 @@
 .gavetta-empty StIcon { icon-size: 44px; color: rgba(255, 255, 255, 0.28); }
 .gavetta-empty StLabel { color: rgba(255, 255, 255, 0.55); }
 
-.gavetta-hint { font-size: 0.76em; color: rgba(255, 255, 255, 0.42); padding: 0 4px; }
+.gavetta-hint { font-size: 0.76em; color: rgba(255, 255, 255, 0.42); padding: 2px 4px 0 4px; }
