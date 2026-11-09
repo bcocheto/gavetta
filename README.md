@@ -25,4 +25,8 @@ Padrão `Super+Shift+V` (o `Super+V` já pertence à bandeja de notificações d
 - Colar com `Ctrl+Shift+V` em terminais.
 - Ignorar apps sensíveis (gerenciadores de senha).
 - Janela de preferências, abas (emoji, snippets), popup perto do cursor.
-- Licença GPL-3.0-or-later (exigida pelo extensions.gnome.org).
+
+
+## Licença
+
+GPL-3.0-or-later (veja [LICENSE](LICENSE)).
