@@ -1,0 +1,9 @@
+{
+  "uuid": "gavetta@bcocheto.github.io",
+  "name": "Gavetta",
+  "description": "Histórico da área de transferência (texto, links e imagens) com busca, fixados e colar direto. Inspirado no Win+V.",
+  "shell-version": ["50"],
+  "url": "https://github.com/bcocheto/gavetta",
+  "settings-schema": "org.gnome.shell.extensions.gavetta",
+  "version-name": "0.1.0"
+}

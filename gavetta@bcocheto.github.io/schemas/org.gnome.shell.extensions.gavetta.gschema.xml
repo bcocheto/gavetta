@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="org.gnome.shell.extensions.gavetta" path="/org/gnome/shell/extensions/gavetta/">
+    <key name="toggle-shortcut" type="as">
+      <default><![CDATA[['<Super><Shift>v']]]></default>
+      <summary>Atalho para abrir a Gavetta</summary>
+      <description>Super+V já é usado pelo GNOME para a bandeja de notificações.</description>
+    </key>
+    <key name="history-size" type="i">
+      <default>100</default>
+      <summary>Máximo de itens no histórico (fixados não contam)</summary>
+    </key>
+    <key name="paste-on-select" type="b">
+      <default>true</default>
+      <summary>Colar direto no app ao escolher um item</summary>
+    </key>
+  </schema>
+</schemalist>
