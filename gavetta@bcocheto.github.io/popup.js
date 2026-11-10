@@ -187,6 +187,16 @@ export class GavettaPopup {
         }
         const spacer = new St.Widget({x_expand: true});
         this._chipRow.add_child(spacer);
+        this._pauseBtn = new St.Button({
+            child: new St.Icon({icon_name: 'media-playback-pause-symbolic', icon_size: 14}),
+            style_class: 'gavetta-chip',
+            can_focus: true,
+        });
+        this._pauseBtn.connect('clicked', () => {
+            this._settings.set_boolean('capture-paused', !this._settings.get_boolean('capture-paused'));
+            this._render();
+        });
+        this._chipRow.add_child(this._pauseBtn);
         const clear = new St.Button({
             child: new St.Icon({icon_name: 'user-trash-symbolic', icon_size: 14}),
             style_class: 'gavetta-chip danger',
@@ -401,7 +411,14 @@ export class GavettaPopup {
     }
 
     _updateStatus() {
-        if (this._tab === 'clip') {
+        const paused = this._settings.get_boolean('capture-paused');
+        if (paused)
+            this._pauseBtn.add_style_class_name('active');
+        else
+            this._pauseBtn.remove_style_class_name('active');
+        if (this._tab === 'clip' && paused) {
+            this._status.text = '⏸ Captura pausada — nada novo é gravado';
+        } else if (this._tab === 'clip') {
             const n = this._store.items.length;
             const shown = this._shown ?? n;
             const count = shown === n ? `${n} ${n === 1 ? 'item' : 'itens'}` : `${shown} de ${n} itens`;

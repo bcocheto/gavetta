@@ -9,7 +9,7 @@ import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 
-import {Store} from './store.js';
+import {Store, looksSecret} from './store.js';
 import {GavettaPopup} from './popup.js';
 
 const CB = St.ClipboardType.CLIPBOARD;
@@ -31,6 +31,7 @@ export default class GavettaExtension extends Extension {
                 this._store.setMax(this._settings.get_int('history-size'))),
             this._settings.connect('changed::show-indicator', () => this._syncIndicator()),
             this._settings.connect('changed::takeover-super-v', () => this._syncTakeover()),
+            this._settings.connect('changed::capture-paused', () => this._syncPauseIcon()),
         ];
 
         this._syncIndicator();
@@ -69,6 +70,7 @@ export default class GavettaExtension extends Extension {
 
         this._vkbd = null;
         this._indicator = null;
+        this._indicatorIcon = null;
         this._popup = null;
         this._store = null;
         this._settings = null;
@@ -84,10 +86,12 @@ export default class GavettaExtension extends Extension {
         const want = this._settings.get_boolean('show-indicator');
         if (want && !this._indicator) {
             this._indicator = new PanelMenu.Button(0.5, 'Gavetta', true);
-            this._indicator.add_child(new St.Icon({
+            this._indicatorIcon = new St.Icon({
                 icon_name: 'edit-paste-symbolic',
                 style_class: 'system-status-icon',
-            }));
+            });
+            this._indicator.add_child(this._indicatorIcon);
+            this._syncPauseIcon();
             this._indicator.connect('button-press-event', () => {
                 this._popup.toggle();
                 return Clutter.EVENT_STOP;
@@ -96,7 +100,17 @@ export default class GavettaExtension extends Extension {
         } else if (!want && this._indicator) {
             this._indicator.destroy();
             this._indicator = null;
+            this._indicatorIcon = null;
         }
+    }
+
+    // ícone de pausa no painel enquanto a captura estiver desligada
+    _syncPauseIcon() {
+        if (!this._indicatorIcon)
+            return;
+        this._indicatorIcon.icon_name = this._settings.get_boolean('capture-paused')
+            ? 'media-playback-pause-symbolic'
+            : 'edit-paste-symbolic';
     }
 
     // ───────────── Super+V ─────────────
@@ -150,6 +164,8 @@ export default class GavettaExtension extends Extension {
         // cópia feita pela própria Gavetta ao escolher um item: não reentra no histórico
         if (this._selfCopy)
             return;
+        if (this._settings.get_boolean('capture-paused'))
+            return;
 
         const types = this._clipboard.get_mimetypes(CB);
 
@@ -181,8 +197,11 @@ export default class GavettaExtension extends Extension {
             return;
         }
         this._clipboard.get_text(CB, (_c, text) => {
-            if (text && text.trim())
-                this._record(() => this._store.addText(text));
+            if (!text || !text.trim())
+                return;
+            if (this._settings?.get_boolean('filter-secrets') && looksSecret(text))
+                return;
+            this._record(() => this._store.addText(text));
         });
     }
 

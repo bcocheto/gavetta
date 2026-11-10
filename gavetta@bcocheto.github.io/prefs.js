@@ -29,6 +29,25 @@ export default class GavettaPreferences extends ExtensionPreferences {
         history.add(size);
         page.add(history);
 
+        // ── Privacidade
+        const privacy = new Adw.PreferencesGroup({
+            title: 'Privacidade',
+            description: 'O histórico fica em texto puro em ~/.local/share/gavetta, legível só por você.',
+        });
+        const paused = new Adw.SwitchRow({
+            title: 'Pausar a captura',
+            subtitle: 'Nada novo copiado entra no histórico enquanto estiver ligado',
+        });
+        settings.bind('capture-paused', paused, 'active', Gio.SettingsBindFlags.DEFAULT);
+        privacy.add(paused);
+        const secrets = new Adw.SwitchRow({
+            title: 'Ignorar senhas e tokens óbvios',
+            subtitle: 'Chaves de API, JWT e chaves privadas não são gravados. O filtro é parcial: não detecta toda senha',
+        });
+        settings.bind('filter-secrets', secrets, 'active', Gio.SettingsBindFlags.DEFAULT);
+        privacy.add(secrets);
+        page.add(privacy);
+
         // ── Comportamento
         const behavior = new Adw.PreferencesGroup({title: 'Comportamento'});
 
@@ -56,7 +75,7 @@ export default class GavettaPreferences extends ExtensionPreferences {
         // ── Atalho
         const keys = new Adw.PreferencesGroup({
             title: 'Atalho',
-            description: 'Formato GTK, por exemplo <Super>v ou <Super><Shift>v.',
+            description: 'Formato GTK com ao menos um modificador, por exemplo <Super>v ou <Super><Shift>v.',
         });
         const shortcut = new Adw.EntryRow({
             title: 'Abrir a Gavetta',
@@ -65,8 +84,9 @@ export default class GavettaPreferences extends ExtensionPreferences {
         });
         shortcut.connect('apply', () => {
             const text = shortcut.text.trim();
-            const [ok] = Gtk.accelerator_parse(text);
-            if (ok) {
+            // exige tecla + modificador: uma tecla sozinha capturaria a digitação global
+            const [ok, key, mods] = Gtk.accelerator_parse(text);
+            if (ok && key !== 0 && mods !== 0) {
                 settings.set_strv('toggle-shortcut', [text]);
                 shortcut.remove_css_class('error');
             } else {

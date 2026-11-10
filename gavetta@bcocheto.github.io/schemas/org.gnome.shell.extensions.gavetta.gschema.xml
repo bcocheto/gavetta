@@ -6,8 +6,18 @@
       <summary>Atalho para abrir a Gavetta</summary>
       <description>Com "takeover-super-v" ligado, a Gavetta libera o Super+V da bandeja de notificações do GNOME enquanto estiver ativa.</description>
     </key>
-    <key name="takeover-super-v" type="b">
+    <key name="capture-paused" type="b">
+      <default>false</default>
+      <summary>Pausar a captura do histórico</summary>
+      <description>Enquanto ligado, nada novo copiado é gravado no histórico.</description>
+    </key>
+    <key name="filter-secrets" type="b">
       <default>true</default>
+      <summary>Ignorar senhas e tokens óbvios</summary>
+      <description>Não grava textos que parecem chaves de API, tokens (JWT, GitHub, AWS…) ou chaves privadas. O filtro é parcial: não detecta toda senha.</description>
+    </key>
+    <key name="takeover-super-v" type="b">
+      <default>false</default>
       <summary>Assumir o Super+V</summary>
       <description>Remove Super+V do atalho "toggle-message-tray" do GNOME enquanto a extensão estiver ativa e restaura ao desativar (Super+M continua abrindo a bandeja).</description>
     </key>

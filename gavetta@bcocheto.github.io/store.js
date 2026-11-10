@@ -7,6 +7,24 @@ const SAVE_DELAY_MS = 400;
 const MAX_TEXT_CHARS = 1_000_000;           // textos maiores que ~1 MB são ignorados
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;   // imagens maiores que 10 MB são ignoradas
 
+// Padrões de segredos óbvios (chaves de API, tokens, chaves privadas).
+// Filtro parcial: não tenta adivinhar senhas "comuns".
+const SECRET_PATTERNS = [
+    /-----BEGIN [A-Z ]*PRIVATE KEY-----/,
+    /^eyJ[\w-]{5,}\.[\w-]{5,}\.[\w-]{5,}$/,                       // JWT
+    /^(sk-|sk_live_|rk_live_|pk_live_|ghp_|gho_|ghu_|ghs_|ghr_|glpat-|npm_|xox[abprs]-)[\w-]{8,}$/,
+    /^github_pat_\w{20,}$/,
+    /^AKIA[0-9A-Z]{16}$/,                                           // AWS access key id
+    /^AIza[\w-]{35}$/,                                              // Google API key
+];
+
+export function looksSecret(text) {
+    if (text.length > 4096)
+        return /-----BEGIN [A-Z ]*PRIVATE KEY-----/.test(text.slice(0, 4096));
+    const t = text.trim();
+    return SECRET_PATTERNS.some(re => re.test(t));
+}
+
 // Histórico persistido em ~/.local/share/gavetta/history.json
 // Imagens ficam em ~/.local/share/gavetta/images/<sha256>.png
 export class Store {
