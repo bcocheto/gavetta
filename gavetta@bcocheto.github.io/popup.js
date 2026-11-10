@@ -13,6 +13,7 @@ const MAX_VISIBLE = 80;
 const GRID_COLS = 8;
 const SEARCH_DEBOUNCE_MS = 80;
 const CLEAR_CONFIRM_MS = 3000;
+const REST_OPACITY = 130;   // fixar/apagar esmaecidos, mas visíveis e clicáveis no toque
 
 // minúsculas e sem acentos, para a busca ("coração" acha "coracao")
 const norm = s => s.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
@@ -152,6 +153,7 @@ export class GavettaPopup {
             const btn = new St.Button({
                 label: tab.label,
                 style_class: 'gavetta-tab',
+                accessible_name: tab.title,
                 can_focus: true,
                 x_expand: true,
             });
@@ -165,6 +167,7 @@ export class GavettaPopup {
         this._entry = new St.Entry({
             hint_text: TABS[0].hint,
             style_class: 'gavetta-search',
+            accessible_name: 'Buscar',
             can_focus: true,
             x_expand: true,
         });
@@ -189,6 +192,7 @@ export class GavettaPopup {
         this._chipRow.add_child(spacer);
         this._pauseBtn = new St.Button({
             child: new St.Icon({icon_name: 'media-playback-pause-symbolic', icon_size: 14}),
+            accessible_name: 'Pausar captura',
             style_class: 'gavetta-chip',
             can_focus: true,
         });
@@ -200,6 +204,7 @@ export class GavettaPopup {
         const clear = new St.Button({
             child: new St.Icon({icon_name: 'user-trash-symbolic', icon_size: 14}),
             style_class: 'gavetta-chip danger',
+            accessible_name: 'Limpar histórico',
             can_focus: true,
         });
         this._clearBtn = clear;
@@ -303,7 +308,7 @@ export class GavettaPopup {
         this._box.opacity = 0;
         this._box.ease({
             opacity: 255,
-            duration: 120,
+            duration: St.Settings.get().enable_animations ? 120 : 0,
             mode: Clutter.AnimationMode.EASE_OUT_QUAD,
         });
         this._entry.clutter_text.grab_key_focus();
@@ -423,7 +428,7 @@ export class GavettaPopup {
             const shown = this._shown ?? n;
             const count = shown === n ? `${n} ${n === 1 ? 'item' : 'itens'}` : `${shown} de ${n} itens`;
             this._status.text =
-                `${count} · ↑↓ navega · Enter cola · Del apaga · Ctrl+P fixa`;
+                `${count} · ↑↓ navega · Enter cola · Alt+1–9 · Del apaga · Ctrl+P fixa`;
         } else {
             this._status.text = '←↑↓→ navega · Enter insere · Ctrl+Tab troca de aba · Esc fecha';
         }
@@ -461,12 +466,24 @@ export class GavettaPopup {
             this._rows[Math.min(idx, this._rows.length - 1)][0].grab_key_focus();
     }
 
+    _emptyMessage(q) {
+        if (q)
+            return 'Nada encontrado';
+        return {
+            image: 'Nenhuma imagem copiada ainda',
+            text: 'Nenhum texto copiado ainda',
+            link: 'Nenhum link copiado ainda',
+            file: 'Nenhum arquivo copiado ainda',
+            pinned: 'Nenhum item fixado',
+        }[this._filter] ?? 'Nada encontrado';
+    }
+
     _renderClipboard(q) {
         const all = this._store.items;
         const items = all.filter(i => this._matches(i, q)).slice(0, MAX_VISIBLE);
         this._shown = items.length;
         if (items.length === 0) {
-            this._empty(all.length ? 'Nada encontrado' : 'Copie algo e ele aparece aqui');
+            this._empty(all.length ? this._emptyMessage(q) : 'Copie algo e ele aparece aqui');
             return;
         }
         for (const item of items) {
@@ -476,8 +493,9 @@ export class GavettaPopup {
         }
     }
 
-    _iconButton(iconName, extraClass, onClick) {
+    _iconButton(iconName, extraClass, label, onClick) {
         const btn = new St.Button({
+            accessible_name: label,
             child: new St.Icon({icon_name: iconName, icon_size: 16}),
             style_class: `gavetta-action ${extraClass}`,
             can_focus: false,
@@ -503,6 +521,7 @@ export class GavettaPopup {
             x_align: Clutter.ActorAlign.FILL,
         });
         card._item = item;
+        card.accessible_name = item.type === 'image' ? 'Imagem' : item.text.slice(0, 200);
         const row = new St.BoxLayout({x_expand: true, style_class: 'gavetta-card-row'});
         card.set_child(row);
 
@@ -551,11 +570,12 @@ export class GavettaPopup {
         const pin = this._iconButton(
             item.pinned ? 'starred-symbolic' : 'non-starred-symbolic',
             item.pinned ? 'pin-on' : '',
+            item.pinned ? 'Desafixar' : 'Fixar',
             () => {
                 this._store.togglePin(item);
                 this._renderKeep(card);
             });
-        const del = this._iconButton('edit-delete-symbolic', 'danger', () => {
+        const del = this._iconButton('edit-delete-symbolic', 'danger', 'Apagar', () => {
             this._store.remove(item);
             this._renderKeep(card);
         });
@@ -568,8 +588,8 @@ export class GavettaPopup {
             del.opacity = 255;
         };
         const hide = () => {
-            pin.opacity = item.pinned ? 255 : 0;
-            del.opacity = 0;
+            pin.opacity = item.pinned ? 255 : REST_OPACITY;
+            del.opacity = REST_OPACITY;
         };
         hide();
         card.connect('notify::hover', () => (card.hover ? show() : hide()));
@@ -704,6 +724,13 @@ export class GavettaPopup {
         }
         if (ctrl && sym >= Clutter.KEY_1 && sym <= Clutter.KEY_4) {
             this._setTab(TABS[sym - Clutter.KEY_1].id);
+            return Clutter.EVENT_STOP;
+        }
+        const alt = (state & Clutter.ModifierType.MOD1_MASK) !== 0;
+        if (alt && this._tab === 'clip' && sym >= Clutter.KEY_1 && sym <= Clutter.KEY_9) {
+            const card = this._rows[sym - Clutter.KEY_1]?.[0];
+            if (card?._item)
+                this._choose({kind: 'item', item: card._item});
             return Clutter.EVENT_STOP;
         }
         if (sym === Clutter.KEY_Up || sym === Clutter.KEY_Down ||

@@ -254,8 +254,13 @@ export default class GavettaExtension extends Extension {
             // sobe o item para o topo do histórico
             this._store.touch(item);
         }
-        if (this._settings.get_boolean('paste-on-select'))
+        if (this._settings.get_boolean('paste-on-select')) {
             this._later(160, () => this._sendPaste());
+        } else {
+            try {
+                Main.osdWindowManager.show(-1, Gio.ThemedIcon.new('edit-copy-symbolic'), 'Copiado');
+            } catch (_e) { /* OSD indisponível nesta versão */ }
+        }
     }
 
     _sendPaste() {
