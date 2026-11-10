@@ -2,7 +2,7 @@ UUID    := gavetta@bcocheto.github.io
 SRC     := $(UUID)
 DEST    := $(HOME)/.local/share/gnome-shell/extensions/$(UUID)
 
-.PHONY: install schemas run pack lint
+.PHONY: install schemas run pack lint test eslint check
 
 schemas:
 	glib-compile-schemas $(SRC)/schemas
@@ -26,3 +26,12 @@ pack:
 lint:
 	@for f in $(SRC)/*.js; do node --check --input-type=module < $$f && echo "ok $$f"; done
 	glib-compile-schemas --strict --dry-run $(SRC)/schemas && echo "ok schema"
+
+test:
+	gjs -m tests/run.js
+
+eslint:
+	npx --yes eslint@9 $(SRC) tests eslint.config.js
+
+# tudo o que o CI roda
+check: lint test eslint

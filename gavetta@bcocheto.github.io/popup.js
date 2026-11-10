@@ -8,15 +8,13 @@ import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
 import {EMOJI, KAOMOJI, SYMBOLS} from './data.js';
+import {norm, timeAgo} from './util.js';
 
 const MAX_VISIBLE = 80;
 const GRID_COLS = 8;
 const SEARCH_DEBOUNCE_MS = 80;
 const CLEAR_CONFIRM_MS = 3000;
 const REST_OPACITY = 130;   // fixar/apagar esmaecidos, mas visíveis e clicáveis no toque
-
-// minúsculas e sem acentos, para a busca ("coração" acha "coracao")
-const norm = s => s.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
 
 const FILE_INFO_CACHE = new Map();
 
@@ -42,20 +40,6 @@ const TYPE_ICON = {
     image: 'image-x-generic-symbolic',
     file: 'folder-documents-symbolic',
 };
-
-function timeAgo(ts) {
-    const s = Math.max(0, Math.floor((Date.now() - ts) / 1000));
-    if (s < 45)
-        return 'agora';
-    const m = Math.round(s / 60);
-    if (m < 60)
-        return `há ${m} min`;
-    const h = Math.round(m / 60);
-    if (h < 24)
-        return `há ${h} h`;
-    const d = Math.round(h / 24);
-    return d === 1 ? 'ontem' : `há ${d} dias`;
-}
 
 function fileInfo(uri) {
     let v = FILE_INFO_CACHE.get(uri);

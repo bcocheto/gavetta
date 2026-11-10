@@ -28,9 +28,10 @@ export function looksSecret(text) {
 // Histórico persistido em ~/.local/share/gavetta/history.json
 // Imagens ficam em ~/.local/share/gavetta/images/<sha256>.png
 export class Store {
-    constructor(maxItems) {
+    // `dir` existe para os testes; em produção usa ~/.local/share/gavetta
+    constructor(maxItems, dir = GLib.build_filenamev([GLib.get_user_data_dir(), 'gavetta'])) {
         this._max = maxItems;
-        this._dir = GLib.build_filenamev([GLib.get_user_data_dir(), 'gavetta']);
+        this._dir = dir;
         this._imgDir = GLib.build_filenamev([this._dir, 'images']);
         this._file = Gio.File.new_for_path(GLib.build_filenamev([this._dir, 'history.json']));
         GLib.mkdir_with_parents(this._imgDir, 0o700);

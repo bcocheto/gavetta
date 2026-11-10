@@ -1,0 +1,19 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Dependências (gjs e glib-compile-schemas)
+        run: sudo apt-get update && sudo apt-get install -y gjs libglib2.0-bin
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Checagens (sintaxe, schema, testes e eslint)
+        run: make check
