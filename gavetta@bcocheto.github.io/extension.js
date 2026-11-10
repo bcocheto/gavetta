@@ -34,7 +34,6 @@ export default class GavettaExtension extends Extension {
         ];
 
         this._syncIndicator();
-        this._syncTakeover();
 
         // Teclado virtual (colar)
         const seat = global.stage.context.get_backend().get_default_seat();
@@ -53,6 +52,9 @@ export default class GavettaExtension extends Extension {
             if (type === Meta.SelectionType.SELECTION_CLIPBOARD)
                 this._onClipboardChanged();
         });
+
+        // por último: se algo acima falhar, a bandeja do GNOME não fica sem Super+V
+        this._syncTakeover();
     }
 
     disable() {
@@ -122,8 +124,11 @@ export default class GavettaExtension extends Extension {
         const saved = this._settings?.get_strv('saved-tray-shortcuts') ?? [];
         if (saved.length === 0)
             return;
+        // reinsere só <Super>v, sem desfazer mudanças feitas pelo usuário no meio tempo
         const kb = new Gio.Settings({schema_id: 'org.gnome.shell.keybindings'});
-        kb.set_strv(TRAY_KEY, saved);
+        const current = kb.get_strv(TRAY_KEY);
+        if (saved.includes('<Super>v') && !current.includes('<Super>v'))
+            kb.set_strv(TRAY_KEY, [...current, '<Super>v']);
         this._settings.set_strv('saved-tray-shortcuts', []);
     }
 
@@ -200,7 +205,16 @@ export default class GavettaExtension extends Extension {
         } else {
             const item = payload.item;
             if (item.type === 'image') {
-                const [, data] = GLib.file_get_contents(this._store.imagePath(item));
+                let data;
+                try {
+                    [, data] = GLib.file_get_contents(this._store.imagePath(item));
+                } catch (e) {
+                    // arquivo da imagem sumiu: remove o item órfão
+                    console.error(`[Gavetta] imagem indisponível: ${e.message}`);
+                    this._store.remove(item);
+                    this._popup?.refresh();
+                    return;
+                }
                 this._clipboard.set_content(CB, 'image/png', new GLib.Bytes(data));
             } else if (item.type === 'file') {
                 const body = `copy\n${item.uris.join('\n')}`;
