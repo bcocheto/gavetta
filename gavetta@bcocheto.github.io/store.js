@@ -3,6 +3,7 @@ import GLib from 'gi://GLib';
 
 const LINK_RE = /^https?:\/\/\S+$/i;
 const MAX_RECENT_EMOJI = 24;
+const SAVE_DELAY_MS = 400;
 const MAX_TEXT_CHARS = 1_000_000;           // textos maiores que ~1 MB são ignorados
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;   // imagens maiores que 10 MB são ignoradas
 
@@ -164,7 +165,27 @@ export class Store {
         }
     }
 
+    // Agrupa gravações seguidas (cada cópia/fixar/apagar chama _save)
     _save() {
+        if (this._saveId)
+            return;
+        this._saveId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, SAVE_DELAY_MS, () => {
+            this._saveId = 0;
+            this._writeNow();
+            return GLib.SOURCE_REMOVE;
+        });
+    }
+
+    // Grava o que estiver pendente (chamar no disable())
+    flush() {
+        if (!this._saveId)
+            return;
+        GLib.source_remove(this._saveId);
+        this._saveId = 0;
+        this._writeNow();
+    }
+
+    _writeNow() {
         try {
             const payload = JSON.stringify({items: this.items, recents: this.recents});
             this._file.replace_contents(

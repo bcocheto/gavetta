@@ -65,6 +65,7 @@ export default class GavettaExtension extends Extension {
         this._restoreTray();
         this._indicator?.destroy();
         this._popup?.destroy();
+        this._store?.flush();
 
         this._vkbd = null;
         this._indicator = null;
@@ -146,6 +147,10 @@ export default class GavettaExtension extends Extension {
     // ───────────── monitor do clipboard ─────────────
 
     _onClipboardChanged() {
+        // cópia feita pela própria Gavetta ao escolher um item: não reentra no histórico
+        if (this._selfCopy)
+            return;
+
         const types = this._clipboard.get_mimetypes(CB);
 
         // Gerenciadores de senha marcam o conteúdo como sensível
@@ -198,6 +203,10 @@ export default class GavettaExtension extends Extension {
     // ───────────── escolha de um item ─────────────
 
     _onPick(payload) {
+        this._selfCopy = true;
+        this._later(400, () => {
+            this._selfCopy = false;
+        });
         if (payload.kind === 'text') {
             this._clipboard.set_text(CB, payload.text);
             if (payload.emoji)

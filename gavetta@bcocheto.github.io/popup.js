@@ -11,6 +11,13 @@ import {EMOJI, KAOMOJI, SYMBOLS} from './data.js';
 
 const MAX_VISIBLE = 80;
 const GRID_COLS = 8;
+const SEARCH_DEBOUNCE_MS = 80;
+const CLEAR_CONFIRM_MS = 3000;
+
+// minúsculas e sem acentos, para a busca ("coração" acha "coracao")
+const norm = s => s.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
+
+const FILE_INFO_CACHE = new Map();
 
 const TABS = [
     {id: 'clip', label: '📋', title: 'Área de transferência', hint: 'Buscar no histórico…'},
@@ -50,6 +57,17 @@ function timeAgo(ts) {
 }
 
 function fileInfo(uri) {
+    let v = FILE_INFO_CACHE.get(uri);
+    if (!v) {
+        v = readFileInfo(uri);
+        if (FILE_INFO_CACHE.size > 500)
+            FILE_INFO_CACHE.clear();
+        FILE_INFO_CACHE.set(uri, v);
+    }
+    return v;
+}
+
+function readFileInfo(uri) {
     try {
         const path = Gio.File.new_for_uri(uri).get_path();
         if (!path)
@@ -151,7 +169,7 @@ export class GavettaPopup {
             x_expand: true,
         });
         this._entry.set_primary_icon(new St.Icon({icon_name: 'edit-find-symbolic', icon_size: 16}));
-        this._entry.clutter_text.connect('text-changed', () => this._render());
+        this._entry.clutter_text.connect('text-changed', () => this._scheduleRender());
         this._entry.clutter_text.connect('activate', () => this._rows[0]?.[0]?.emit('clicked', 0));
         this._box.add_child(this._entry);
 
@@ -174,7 +192,19 @@ export class GavettaPopup {
             style_class: 'gavetta-chip danger',
             can_focus: true,
         });
+        this._clearBtn = clear;
+        // primeiro clique pede confirmação; o segundo apaga
         clear.connect('clicked', () => {
+            if (!this._clearTimer) {
+                clear.child = new St.Label({text: 'Apagar tudo?'});
+                this._clearTimer = GLib.timeout_add(GLib.PRIORITY_DEFAULT, CLEAR_CONFIRM_MS, () => {
+                    this._clearTimer = 0;
+                    this._disarmClear();
+                    return GLib.SOURCE_REMOVE;
+                });
+                return;
+            }
+            this._disarmClear();
             this._store.clear();
             this._render();
         });
@@ -197,6 +227,31 @@ export class GavettaPopup {
         this._box.add_child(this._status);
 
         this._backdrop.connect('captured-event', (_a, event) => this._onEvent(event));
+    }
+
+    _disarmClear() {
+        if (this._clearTimer) {
+            GLib.source_remove(this._clearTimer);
+            this._clearTimer = 0;
+        }
+        if (this._clearBtn)
+            this._clearBtn.child = new St.Icon({icon_name: 'user-trash-symbolic', icon_size: 14});
+    }
+
+    _cancelDebounce() {
+        if (this._debounceId) {
+            GLib.source_remove(this._debounceId);
+            this._debounceId = 0;
+        }
+    }
+
+    _scheduleRender() {
+        this._cancelDebounce();
+        this._debounceId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, SEARCH_DEBOUNCE_MS, () => {
+            this._debounceId = 0;
+            this._render();
+            return GLib.SOURCE_REMOVE;
+        });
     }
 
     destroy() {
@@ -228,10 +283,12 @@ export class GavettaPopup {
         this._grab = grab;
         this._open = true;
 
+        FILE_INFO_CACHE.clear();
+        this._anchor = global.get_pointer();
         this._entry.set_text('');
+        this._cancelDebounce(); // _setTab já renderiza
         this._filter = 'all';
         this._setTab('clip');
-        this._place();
 
         this._box.opacity = 0;
         this._box.ease({
@@ -246,6 +303,8 @@ export class GavettaPopup {
         if (!this._open)
             return;
         this._open = false;
+        this._cancelDebounce();
+        this._disarmClear();
         if (this._grab) {
             Main.popModal(this._grab);
             this._grab = null;
@@ -261,7 +320,7 @@ export class GavettaPopup {
     _place() {
         const [, w] = this._box.get_preferred_width(-1);
         const [, h] = this._box.get_preferred_height(w);
-        const [px, py] = global.get_pointer();
+        const [px, py] = this._anchor ?? global.get_pointer();
 
         const monitors = Main.layoutManager.monitors;
         const mon = monitors.find(m =>
@@ -301,7 +360,11 @@ export class GavettaPopup {
                 btn.remove_style_class_name('active');
         });
         this._chipRow.visible = id === 'clip';
+        this._cancelDebounce();
         this._render();
+        // a altura muda entre abas (emoji é bem mais alta): reajusta para caber na tela
+        if (this._open)
+            this._place();
     }
 
     _cycleTab(step) {
@@ -312,7 +375,7 @@ export class GavettaPopup {
     _render() {
         this._content.destroy_all_children();
         this._rows = [];
-        const q = this._entry.get_text().toLowerCase().trim();
+        const q = norm(this._entry.get_text()).trim();
 
         this._chips.forEach((chip, k) => {
             if (k === this._filter)
@@ -340,8 +403,10 @@ export class GavettaPopup {
     _updateStatus() {
         if (this._tab === 'clip') {
             const n = this._store.items.length;
+            const shown = this._shown ?? n;
+            const count = shown === n ? `${n} ${n === 1 ? 'item' : 'itens'}` : `${shown} de ${n} itens`;
             this._status.text =
-                `${n} ${n === 1 ? 'item' : 'itens'} · ↑↓ navega · Enter cola · Del apaga · Ctrl+P fixa`;
+                `${count} · ↑↓ navega · Enter cola · Del apaga · Ctrl+P fixa`;
         } else {
             this._status.text = '←↑↓→ navega · Enter insere · Ctrl+Tab troca de aba · Esc fecha';
         }
@@ -367,13 +432,22 @@ export class GavettaPopup {
             return false;
         if (!q)
             return true;
-        return (item.text ?? '').toLowerCase().includes(q) ||
+        return norm(item.text ?? '').includes(q) ||
             (item.type === 'image' && 'imagem'.includes(q));
+    }
+
+    // redesenha mantendo o foco na mesma posição da lista
+    _renderKeep(card) {
+        const idx = this._rows.findIndex(r => r[0] === card);
+        this._render();
+        if (idx >= 0 && this._rows.length > 0)
+            this._rows[Math.min(idx, this._rows.length - 1)][0].grab_key_focus();
     }
 
     _renderClipboard(q) {
         const all = this._store.items;
         const items = all.filter(i => this._matches(i, q)).slice(0, MAX_VISIBLE);
+        this._shown = items.length;
         if (items.length === 0) {
             this._empty(all.length ? 'Nada encontrado' : 'Copie algo e ele aparece aqui');
             return;
@@ -399,7 +473,7 @@ export class GavettaPopup {
     _thumb(path) {
         return new St.Bin({
             style_class: 'gavetta-thumb',
-            style: `background-image: url("file://${path}");`,
+            style: `background-image: url("${Gio.File.new_for_path(path).get_uri()}");`,
             y_align: Clutter.ActorAlign.CENTER,
         });
     }
@@ -440,7 +514,8 @@ export class GavettaPopup {
         const mid = new St.BoxLayout({vertical: true, x_expand: true, y_align: Clutter.ActorAlign.CENTER});
         if (item.type !== 'image') {
             const preview = new St.Label({
-                text: item.text.trim().replace(/\s+/g, ' ').slice(0, 300),
+                // corta antes da regex: o texto pode ter centenas de KB
+                text: item.text.slice(0, 1000).trim().replace(/\s+/g, ' ').slice(0, 300),
                 style_class: 'gavetta-preview',
             });
             preview.clutter_text.line_wrap = true;
@@ -461,11 +536,11 @@ export class GavettaPopup {
             item.pinned ? 'pin-on' : '',
             () => {
                 this._store.togglePin(item);
-                this._render();
+                this._renderKeep(card);
             });
         const del = this._iconButton('edit-delete-symbolic', 'danger', () => {
             this._store.remove(item);
-            this._render();
+            this._renderKeep(card);
         });
         actions.add_child(pin);
         actions.add_child(del);
@@ -521,7 +596,7 @@ export class GavettaPopup {
     _renderGrid(groups, q, withRecents) {
         if (q) {
             const found = groups.flatMap(g => g.items)
-                .filter(i => i.glyph.includes(q) || i.kw.includes(q))
+                .filter(i => i.glyph.includes(q) || norm(i.kw).includes(q))
                 .map(i => i.glyph);
             if (found.length === 0) {
                 this._empty('Nada encontrado', 'face-uncertain-symbolic');
@@ -543,7 +618,7 @@ export class GavettaPopup {
     _renderKaomoji(q) {
         let any = false;
         for (const group of KAOMOJI) {
-            const items = group.items.filter(i => !q || i.glyph.toLowerCase().includes(q) || i.kw.includes(q));
+            const items = group.items.filter(i => !q || norm(i.glyph).includes(q) || norm(i.kw).includes(q));
             if (items.length === 0)
                 continue;
             any = true;
@@ -625,12 +700,12 @@ export class GavettaPopup {
         }
         if (ctrl && (sym === Clutter.KEY_p || sym === Clutter.KEY_P) && focus?._item) {
             this._store.togglePin(focus._item);
-            this._render();
+            this._renderKeep(focus);
             return Clutter.EVENT_STOP;
         }
         if (sym === Clutter.KEY_Delete && focus?._item) {
             this._store.remove(focus._item);
-            this._render();
+            this._renderKeep(focus);
             return Clutter.EVENT_STOP;
         }
 
@@ -638,7 +713,7 @@ export class GavettaPopup {
         if (!inEntry && !ctrl && !mod) {
             if (sym === Clutter.KEY_BackSpace) {
                 const t = this._entry.get_text();
-                this._entry.set_text(t.slice(0, -1));
+                this._entry.set_text(Array.from(t).slice(0, -1).join(''));
                 this._entry.clutter_text.grab_key_focus();
                 return Clutter.EVENT_STOP;
             }
